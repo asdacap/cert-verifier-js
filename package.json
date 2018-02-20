@@ -4,7 +4,7 @@
   "description": "Javascript library for verifying Blockcerts",
   "main": "verifier.js",
   "scripts": {
-    "test": "mocha --compilers js:babel-core/register tests/test*.js",
+    "test": "mocha --timeout 10000 --compilers js:babel-core/register tests/test*.js",
     "build": "browserify lib/index.js --s Verifier -o verifier.js -t [ babelify --presets [ es2015] ]",
     "uglify": "uglifyjs bundle.js --compress --mangle --output verifier.js"
   },
