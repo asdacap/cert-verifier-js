@@ -16,6 +16,8 @@
     ]
   },
   "dependencies": {
+    "babel-core": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
     "bigi": "^1.4.2",
     "bitcoinjs-lib": "^2.3.0",
     "bs58": "^3.0.0",
@@ -23,13 +25,13 @@
     "chai": "^3.5.0",
     "debug": "^3.0.1",
     "ecurve": "^1.0.4",
+    "isomorphic-fetch": "^2.2.1",
     "jsonld": "^0.4.11",
     "mocha": "^3.5.3",
     "sha256": "^0.2.0",
     "string.prototype.startswith": "^0.2.0",
     "tsify": "^3.0.3",
-    "verror": "^1.9.0",
-    "xmlhttprequest": "^1.8.0"
+    "verror": "^1.9.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.0",

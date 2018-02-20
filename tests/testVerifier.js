@@ -2,7 +2,7 @@
 
 import {assert, expect} from 'chai'
 import {CertificateVerifier} from '../lib/index'
-import {readFileAsync} from '../lib/promisifiedRequests'
+import {readFileAsync} from './util'
 import {Status} from '../config/default'
 
 describe("Certificate verifier", async () => {

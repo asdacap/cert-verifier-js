@@ -2,7 +2,7 @@
 
 import { assert, expect } from 'chai'
 import { Blockchain, Certificate } from '../lib/index'
-import {readFileAsync} from '../lib/promisifiedRequests'
+import {readFileAsync} from './util'
 
 describe('Certificate parsing', async () => {
   describe('parse v2', async () => {
