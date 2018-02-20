@@ -4023,21 +4023,27 @@ require('./convert')
 module.exports = BigInteger
 },{"./bigi":12,"./convert":13}],15:[function(require,module,exports){
 module.exports={
-  "_from": "bigi@^1.4.2",
+  "_args": [
+    [
+      "bigi@1.4.2",
+      "/home/amirul/repo/cert-verifier-js"
+    ]
+  ],
+  "_from": "bigi@1.4.2",
   "_id": "bigi@1.4.2",
   "_inBundle": false,
   "_integrity": "sha1-nGZalfiLiwj8Bc/XMfVhhZ1yWCU=",
   "_location": "/bigi",
   "_phantomChildren": {},
   "_requested": {
-    "type": "range",
+    "type": "version",
     "registry": true,
-    "raw": "bigi@^1.4.2",
+    "raw": "bigi@1.4.2",
     "name": "bigi",
     "escapedName": "bigi",
-    "rawSpec": "^1.4.2",
+    "rawSpec": "1.4.2",
     "saveSpec": null,
-    "fetchSpec": "^1.4.2"
+    "fetchSpec": "1.4.2"
   },
   "_requiredBy": [
     "/",
@@ -4045,15 +4051,12 @@ module.exports={
     "/ecurve"
   ],
   "_resolved": "https://registry.npmjs.org/bigi/-/bigi-1.4.2.tgz",
-  "_shasum": "9c665a95f88b8b08fc05cfd731f561859d725825",
-  "_spec": "bigi@^1.4.2",
+  "_spec": "1.4.2",
   "_where": "/home/amirul/repo/cert-verifier-js",
   "bugs": {
     "url": "https://github.com/cryptocoinjs/bigi/issues"
   },
-  "bundleDependencies": false,
   "dependencies": {},
-  "deprecated": false,
   "description": "Big integers.",
   "devDependencies": {
     "coveralls": "^2.11.2",
