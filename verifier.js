@@ -477,7 +477,7 @@ module.exports = {
 
 };
 
-},{"verror":114}],2:[function(require,module,exports){
+},{"verror":115}],2:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -695,7 +695,7 @@ Promise.properRace = function (promises, count) {
   });
 };
 
-},{"../config/default":1,"./promisifiedRequests":6,"./verifierModels":8,"debug":68,"string.prototype.startswith":110}],3:[function(require,module,exports){
+},{"../config/default":1,"./promisifiedRequests":6,"./verifierModels":8,"debug":68,"string.prototype.startswith":111}],3:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -879,7 +879,7 @@ var SignatureImage = exports.SignatureImage = function SignatureImage(image, job
   this.name = name;
 };
 
-},{"../config/default":1,"string.prototype.startswith":110}],4:[function(require,module,exports){
+},{"../config/default":1,"string.prototype.startswith":111}],4:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1159,7 +1159,7 @@ function _hexFromByteArray(byteArray) {
   return out;
 };
 
-},{"../config/default":1,"bitcoinjs-lib":52,"debug":68,"jsonld":84,"sha256":86,"string.prototype.startswith":110}],5:[function(require,module,exports){
+},{"../config/default":1,"bitcoinjs-lib":52,"debug":68,"jsonld":85,"sha256":87,"string.prototype.startswith":111}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1211,40 +1211,20 @@ var _debug2 = _interopRequireDefault(_debug);
 
 var _default = require('../config/default');
 
+require('isomorphic-fetch');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var log = (0, _debug2.default)("promisifiedRequests");
 
 function request(obj) {
-  return new Promise(function (resolve, reject) {
-    var url = obj.url;
-    var request = new XMLHttpRequest();
-
-    request.addEventListener('load', function () {
-      if (request.status >= 200 && request.status < 300) {
-        resolve(request.responseText);
-      } else {
-        var failureMessage = 'Error fetching url:' + url + '; status code:' + request.status;
-        log(failureMessage);
-        reject(new _default.VerifierError(failureMessage));
-      }
-    });
-    request.addEventListener('error', function () {
-      log('Request failed with error ' + request.responseText);
-      reject(new _default.VerifierError(request.responseText));
-    });
-
-    request.open(obj.method || "GET", url);
-    request.responseType = "json";
-    if (obj.body) {
-      request.send(JSON.stringify(obj.body));
-    } else {
-      request.send();
-    }
+  return fetch(obj.url).then(function (response) {
+    if (!response.ok) throw new Error('Network error: ' + response.statusText);
+    return response.text();
   });
 };
 
-},{"../config/default":1,"debug":68}],7:[function(require,module,exports){
+},{"../config/default":1,"debug":68,"isomorphic-fetch":83}],7:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1277,8 +1257,6 @@ var _verifierModels = require('./verifierModels');
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -1339,34 +1317,11 @@ var CertificateVerifier = exports.CertificateVerifier = function () {
     }
   }, {
     key: 'doAsyncAction',
-    value: function () {
-      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(status, action) {
-        return regeneratorRuntime.wrap(function _callee$(_context) {
-          while (1) {
-            switch (_context.prev = _context.next) {
-              case 0:
-                log((0, _default.getVerboseMessage)(status));
-                this.statusCallback(status);
-                _context.next = 4;
-                return action();
-
-              case 4:
-                return _context.abrupt('return', _context.sent);
-
-              case 5:
-              case 'end':
-                return _context.stop();
-            }
-          }
-        }, _callee, this);
-      }));
-
-      function doAsyncAction(_x, _x2) {
-        return _ref.apply(this, arguments);
-      }
-
-      return doAsyncAction;
-    }()
+    value: async function doAsyncAction(status, action) {
+      log((0, _default.getVerboseMessage)(status));
+      this.statusCallback(status);
+      return await action();
+    }
   }, {
     key: 'getTransactionId',
     value: function getTransactionId() {
@@ -1380,297 +1335,129 @@ var CertificateVerifier = exports.CertificateVerifier = function () {
     }
   }, {
     key: 'verifyV1_2',
-    value: function () {
-      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3() {
-        var _this = this;
+    value: async function verifyV1_2() {
+      var _this = this;
 
-        var transactionId, docToVerify, localHash, _ref4, _ref5, txData, issuerProfileJson, issuerKeyMap;
+      var transactionId = this.getTransactionId();
+      var docToVerify = this.document;
 
-        return regeneratorRuntime.wrap(function _callee3$(_context3) {
-          while (1) {
-            switch (_context3.prev = _context3.next) {
-              case 0:
-                transactionId = this.getTransactionId();
-                docToVerify = this.document;
-                _context3.next = 4;
-                return this.doAsyncAction(_default.Status.computingLocalHash, _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
-                  return regeneratorRuntime.wrap(function _callee2$(_context2) {
-                    while (1) {
-                      switch (_context2.prev = _context2.next) {
-                        case 0:
-                          return _context2.abrupt('return', checks.computeLocalHash(docToVerify, _this.certificate.version));
+      var localHash = await this.doAsyncAction(_default.Status.computingLocalHash, async function () {
+        return checks.computeLocalHash(docToVerify, _this.certificate.version);
+      });
 
-                        case 1:
-                        case 'end':
-                          return _context2.stop();
-                      }
-                    }
-                  }, _callee2, _this);
-                })));
+      var _ref = await Promise.all([bitcoinConnectors.lookForTx(transactionId, this.certificate.chain, this.certificate.version), (0, _verifierModels.getIssuerProfile)(this.certificate.issuer.id)]),
+          _ref2 = _slicedToArray(_ref, 2),
+          txData = _ref2[0],
+          issuerProfileJson = _ref2[1];
 
-              case 4:
-                localHash = _context3.sent;
-                _context3.next = 7;
-                return Promise.all([bitcoinConnectors.lookForTx(transactionId, this.certificate.chain, this.certificate.version), (0, _verifierModels.getIssuerProfile)(this.certificate.issuer.id)]);
+      var issuerKeyMap = (0, _verifierModels.parseIssuerKeys)(issuerProfileJson);
 
-              case 7:
-                _ref4 = _context3.sent;
-                _ref5 = _slicedToArray(_ref4, 2);
-                txData = _ref5[0];
-                issuerProfileJson = _ref5[1];
-                issuerKeyMap = (0, _verifierModels.parseIssuerKeys)(issuerProfileJson);
-
-
-                this.doAction(_default.Status.comparingHashes, function () {
-                  return checks.ensureHashesEqual(localHash, _this.certificate.receipt.targetHash);
-                });
-                this.doAction(_default.Status.checkingMerkleRoot, function () {
-                  return checks.ensureMerkleRootEqual(_this.certificate.receipt.merkleRoot, txData.remoteHash);
-                });
-                this.doAction(_default.Status.checkingReceipt, function () {
-                  return checks.ensureValidReceipt(_this.certificate.receipt);
-                });
-                this.doAction(_default.Status.checkingRevokedStatus, function () {
-                  return checks.ensureNotRevokedBySpentOutput(txData.revokedAddresses, (0, _verifierModels.parseRevocationKey)(issuerProfileJson), _this.certificate.revocationKey);
-                });
-                this.doAction(_default.Status.checkingAuthenticity, function () {
-                  return checks.ensureValidIssuingKey(issuerKeyMap, txData.issuingAddress, txData.time);
-                });
-                this.doAction(_default.Status.checkingExpiresDate, function () {
-                  return checks.ensureNotExpired(_this.certificate.expires);
-                });
-
-              case 18:
-              case 'end':
-                return _context3.stop();
-            }
-          }
-        }, _callee3, this);
-      }));
-
-      function verifyV1_2() {
-        return _ref2.apply(this, arguments);
-      }
-
-      return verifyV1_2;
-    }()
+      this.doAction(_default.Status.comparingHashes, function () {
+        return checks.ensureHashesEqual(localHash, _this.certificate.receipt.targetHash);
+      });
+      this.doAction(_default.Status.checkingMerkleRoot, function () {
+        return checks.ensureMerkleRootEqual(_this.certificate.receipt.merkleRoot, txData.remoteHash);
+      });
+      this.doAction(_default.Status.checkingReceipt, function () {
+        return checks.ensureValidReceipt(_this.certificate.receipt);
+      });
+      this.doAction(_default.Status.checkingRevokedStatus, function () {
+        return checks.ensureNotRevokedBySpentOutput(txData.revokedAddresses, (0, _verifierModels.parseRevocationKey)(issuerProfileJson), _this.certificate.revocationKey);
+      });
+      this.doAction(_default.Status.checkingAuthenticity, function () {
+        return checks.ensureValidIssuingKey(issuerKeyMap, txData.issuingAddress, txData.time);
+      });
+      this.doAction(_default.Status.checkingExpiresDate, function () {
+        return checks.ensureNotExpired(_this.certificate.expires);
+      });
+    }
   }, {
     key: 'verifyV2',
-    value: function () {
-      var _ref6 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
-        var _this2 = this;
+    value: async function verifyV2() {
+      var _this2 = this;
 
-        var transactionId, docToVerify, localHash, _ref8, _ref9, txData, issuerKeyMap, revokedAssertions;
+      var transactionId = this.getTransactionId();
+      var docToVerify = this.document;
 
-        return regeneratorRuntime.wrap(function _callee5$(_context5) {
-          while (1) {
-            switch (_context5.prev = _context5.next) {
-              case 0:
-                transactionId = this.getTransactionId();
-                docToVerify = this.document;
-                _context5.next = 4;
-                return this.doAsyncAction(_default.Status.computingLocalHash, _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
-                  return regeneratorRuntime.wrap(function _callee4$(_context4) {
-                    while (1) {
-                      switch (_context4.prev = _context4.next) {
-                        case 0:
-                          return _context4.abrupt('return', checks.computeLocalHash(docToVerify, _this2.certificate.version));
+      var localHash = await this.doAsyncAction(_default.Status.computingLocalHash, async function () {
+        return checks.computeLocalHash(docToVerify, _this2.certificate.version);
+      });
 
-                        case 1:
-                        case 'end':
-                          return _context4.stop();
-                      }
-                    }
-                  }, _callee4, _this2);
-                })));
+      var _ref3 = await Promise.all([bitcoinConnectors.lookForTx(transactionId, this.certificate.chain), (0, _verifierModels.getIssuerKeys)(this.certificate.issuer.id), (0, _verifierModels.getRevokedAssertions)(this.certificate.issuer.revocationList)]),
+          _ref4 = _slicedToArray(_ref3, 3),
+          txData = _ref4[0],
+          issuerKeyMap = _ref4[1],
+          revokedAssertions = _ref4[2];
 
-              case 4:
-                localHash = _context5.sent;
-                _context5.next = 7;
-                return Promise.all([bitcoinConnectors.lookForTx(transactionId, this.certificate.chain), (0, _verifierModels.getIssuerKeys)(this.certificate.issuer.id), (0, _verifierModels.getRevokedAssertions)(this.certificate.issuer.revocationList)]);
-
-              case 7:
-                _ref8 = _context5.sent;
-                _ref9 = _slicedToArray(_ref8, 3);
-                txData = _ref9[0];
-                issuerKeyMap = _ref9[1];
-                revokedAssertions = _ref9[2];
-
-
-                this.doAction(_default.Status.comparingHashes, function () {
-                  return checks.ensureHashesEqual(localHash, _this2.certificate.receipt.targetHash);
-                });
-                this.doAction(_default.Status.checkingMerkleRoot, function () {
-                  return checks.ensureMerkleRootEqual(_this2.certificate.receipt.merkleRoot, txData.remoteHash);
-                });
-                this.doAction(_default.Status.checkingReceipt, function () {
-                  return checks.ensureValidReceipt(_this2.certificate.receipt);
-                });
-                this.doAction(_default.Status.checkingRevokedStatus, function () {
-                  return checks.ensureNotRevokedByList(revokedAssertions, _this2.certificate.id);
-                });
-                this.doAction(_default.Status.checkingAuthenticity, function () {
-                  return checks.ensureValidIssuingKey(issuerKeyMap, txData.issuingAddress, txData.time);
-                });
-                this.doAction(_default.Status.checkingExpiresDate, function () {
-                  return checks.ensureNotExpired(_this2.certificate.expires);
-                });
-
-              case 18:
-              case 'end':
-                return _context5.stop();
-            }
-          }
-        }, _callee5, this);
-      }));
-
-      function verifyV2() {
-        return _ref6.apply(this, arguments);
-      }
-
-      return verifyV2;
-    }()
+      this.doAction(_default.Status.comparingHashes, function () {
+        return checks.ensureHashesEqual(localHash, _this2.certificate.receipt.targetHash);
+      });
+      this.doAction(_default.Status.checkingMerkleRoot, function () {
+        return checks.ensureMerkleRootEqual(_this2.certificate.receipt.merkleRoot, txData.remoteHash);
+      });
+      this.doAction(_default.Status.checkingReceipt, function () {
+        return checks.ensureValidReceipt(_this2.certificate.receipt);
+      });
+      this.doAction(_default.Status.checkingRevokedStatus, function () {
+        return checks.ensureNotRevokedByList(revokedAssertions, _this2.certificate.id);
+      });
+      this.doAction(_default.Status.checkingAuthenticity, function () {
+        return checks.ensureValidIssuingKey(issuerKeyMap, txData.issuingAddress, txData.time);
+      });
+      this.doAction(_default.Status.checkingExpiresDate, function () {
+        return checks.ensureNotExpired(_this2.certificate.expires);
+      });
+    }
   }, {
     key: 'verifyV2Mock',
-    value: function () {
-      var _ref10 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee7() {
-        var _this3 = this;
+    value: async function verifyV2Mock() {
+      var _this3 = this;
 
-        var docToVerify, localHash;
-        return regeneratorRuntime.wrap(function _callee7$(_context7) {
-          while (1) {
-            switch (_context7.prev = _context7.next) {
-              case 0:
-                docToVerify = this.document;
-                _context7.next = 3;
-                return this.doAsyncAction(_default.Status.computingLocalHash, _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6() {
-                  return regeneratorRuntime.wrap(function _callee6$(_context6) {
-                    while (1) {
-                      switch (_context6.prev = _context6.next) {
-                        case 0:
-                          return _context6.abrupt('return', checks.computeLocalHash(docToVerify, _this3.certificate.version));
+      var docToVerify = this.document;
+      var localHash = await this.doAsyncAction(_default.Status.computingLocalHash, async function () {
+        return checks.computeLocalHash(docToVerify, _this3.certificate.version);
+      });
 
-                        case 1:
-                        case 'end':
-                          return _context6.stop();
-                      }
-                    }
-                  }, _callee6, _this3);
-                })));
-
-              case 3:
-                localHash = _context7.sent;
-
-
-                this.doAction(_default.Status.comparingHashes, function () {
-                  return checks.ensureHashesEqual(localHash, _this3.certificate.receipt.targetHash);
-                });
-                this.doAction(_default.Status.checkingReceipt, function () {
-                  return checks.ensureValidReceipt(_this3.certificate.receipt);
-                });
-                this.doAction(_default.Status.checkingExpiresDate, function () {
-                  return checks.ensureNotExpired(_this3.certificate.expires);
-                });
-
-              case 7:
-              case 'end':
-                return _context7.stop();
-            }
-          }
-        }, _callee7, this);
-      }));
-
-      function verifyV2Mock() {
-        return _ref10.apply(this, arguments);
-      }
-
-      return verifyV2Mock;
-    }()
+      this.doAction(_default.Status.comparingHashes, function () {
+        return checks.ensureHashesEqual(localHash, _this3.certificate.receipt.targetHash);
+      });
+      this.doAction(_default.Status.checkingReceipt, function () {
+        return checks.ensureValidReceipt(_this3.certificate.receipt);
+      });
+      this.doAction(_default.Status.checkingExpiresDate, function () {
+        return checks.ensureNotExpired(_this3.certificate.expires);
+      });
+    }
   }, {
     key: 'verify',
-    value: function () {
-      var _ref12 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee8(completionCallback) {
-        return regeneratorRuntime.wrap(function _callee8$(_context8) {
-          while (1) {
-            switch (_context8.prev = _context8.next) {
-              case 0:
-                if (!(this.certificate.version == _default.CertificateVersion.v1_1)) {
-                  _context8.next = 2;
-                  break;
-                }
-
-                throw new _default.VerifierError("Verification of 1.1 certificates is not supported by this component. See the python cert-verifier for legacy verification");
-
-              case 2:
-                completionCallback = completionCallback || noop;
-                _context8.prev = 3;
-
-                if (!(this.certificate.version == _default.CertificateVersion.v1_2)) {
-                  _context8.next = 9;
-                  break;
-                }
-
-                _context8.next = 7;
-                return this.verifyV1_2();
-
-              case 7:
-                _context8.next = 16;
-                break;
-
-              case 9:
-                if (!(this.certificate.chain == _default.Blockchain.mocknet || this.certificate.chain == _default.Blockchain.regtest)) {
-                  _context8.next = 14;
-                  break;
-                }
-
-                _context8.next = 12;
-                return this.verifyV2Mock();
-
-              case 12:
-                _context8.next = 16;
-                break;
-
-              case 14:
-                _context8.next = 16;
-                return this.verifyV2();
-
-              case 16:
-                return _context8.abrupt('return', this._succeed(completionCallback));
-
-              case 19:
-                _context8.prev = 19;
-                _context8.t0 = _context8['catch'](3);
-
-                if (!(_context8.t0 instanceof _default.VerifierError)) {
-                  _context8.next = 23;
-                  break;
-                }
-
-                return _context8.abrupt('return', this._failed(completionCallback, _context8.t0));
-
-              case 23:
-                throw _context8.t0;
-
-              case 24:
-              case 'end':
-                return _context8.stop();
-            }
-          }
-        }, _callee8, this, [[3, 19]]);
-      }));
-
-      function verify(_x3) {
-        return _ref12.apply(this, arguments);
+    value: async function verify(completionCallback) {
+      if (this.certificate.version == _default.CertificateVersion.v1_1) {
+        throw new _default.VerifierError("Verification of 1.1 certificates is not supported by this component. See the python cert-verifier for legacy verification");
       }
+      completionCallback = completionCallback || noop;
+      try {
+        if (this.certificate.version == _default.CertificateVersion.v1_2) {
+          await this.verifyV1_2();
+        } else if (this.certificate.chain == _default.Blockchain.mocknet || this.certificate.chain == _default.Blockchain.regtest) {
+          await this.verifyV2Mock();
+        } else {
+          await this.verifyV2();
+        }
 
-      return verify;
-    }()
+        return this._succeed(completionCallback);
+      } catch (e) {
+        if (e instanceof _default.VerifierError) {
+          return this._failed(completionCallback, e);
+        }
+        throw e;
+      }
+    }
   }]);
 
   return CertificateVerifier;
 }();
 
-},{"../config/default":1,"./bitcoinConnectors":2,"./certificate":3,"./checks":4,"./verifierModels":8,"debug":68,"string.prototype.startswith":110}],8:[function(require,module,exports){
+},{"../config/default":1,"./bitcoinConnectors":2,"./certificate":3,"./checks":4,"./verifierModels":8,"debug":68,"string.prototype.startswith":111}],8:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -2011,7 +1798,7 @@ function _setExports(ndebug) {
 module.exports = _setExports(process.env.NODE_NDEBUG);
 
 }).call(this,{"isBuffer":require("../is-buffer/index.js")},require('_process'))
-},{"../is-buffer/index.js":82,"_process":85,"assert":10,"stream":89,"util":113}],10:[function(require,module,exports){
+},{"../is-buffer/index.js":82,"_process":86,"assert":10,"stream":90,"util":114}],10:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -2505,7 +2292,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"util/":113}],11:[function(require,module,exports){
+},{"util/":114}],11:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -4672,7 +4459,7 @@ CipherBase.prototype._toString = function (value, enc, fin) {
 
 module.exports = CipherBase
 
-},{"inherits":27,"safe-buffer":30,"stream":89,"string_decoder":63}],22:[function(require,module,exports){
+},{"inherits":27,"safe-buffer":30,"stream":90,"string_decoder":63}],22:[function(require,module,exports){
 (function (Buffer){
 'use strict'
 var inherits = require('inherits')
@@ -5094,7 +4881,7 @@ function randomBytes (size, cb) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":85,"safe-buffer":30}],29:[function(require,module,exports){
+},{"_process":86,"safe-buffer":30}],29:[function(require,module,exports){
 (function (Buffer){
 'use strict'
 var inherits = require('inherits')
@@ -12154,7 +11941,7 @@ function localstorage() {
 }
 
 }).call(this,require('_process'))
-},{"./debug":69,"_process":85}],69:[function(require,module,exports){
+},{"./debug":69,"_process":86}],69:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -13786,7 +13573,7 @@ arguments[4][30][0].apply(exports,arguments)
 
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":85}],77:[function(require,module,exports){
+},{"_process":86}],77:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -14277,7 +14064,7 @@ function dumpException(ex)
 }
 
 }).call(this,require('_process'))
-},{"_process":85,"assert":10,"util":113}],79:[function(require,module,exports){
+},{"_process":86,"assert":10,"util":114}],79:[function(require,module,exports){
 (function (Buffer){
 'use strict'
 var Transform = require('stream').Transform
@@ -14364,7 +14151,7 @@ HashBase.prototype._digest = function () {
 module.exports = HashBase
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":66,"inherits":80,"stream":89}],80:[function(require,module,exports){
+},{"buffer":66,"inherits":80,"stream":90}],80:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
 },{"dup":27}],81:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -14476,8 +14263,16 @@ function isSlowBuffer (obj) {
 }
 
 },{}],83:[function(require,module,exports){
+// the whatwg-fetch polyfill installs the fetch() function
+// on the global object (window or self)
+//
+// Return that as the export for use in Webpack, Browserify etc.
+require('whatwg-fetch');
+module.exports = self.fetch.bind(self);
+
+},{"whatwg-fetch":117}],84:[function(require,module,exports){
 // Ignore module for browserify (see package.json)
-},{}],84:[function(require,module,exports){
+},{}],85:[function(require,module,exports){
 (function (process,global,__dirname){
 /**
  * A JavaScript implementation of the JSON-LD API.
@@ -22672,7 +22467,7 @@ return factory;
 })();
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},"/node_modules/jsonld/js")
-},{"_process":85,"crypto":83,"es6-promise":76,"http":83,"jsonld-request":83,"pkginfo":83,"request":83,"util":83,"xmldom":83}],85:[function(require,module,exports){
+},{"_process":86,"crypto":84,"es6-promise":76,"http":84,"jsonld-request":84,"pkginfo":84,"request":84,"util":84,"xmldom":84}],86:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -22858,7 +22653,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],86:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 !function(globals) {
 'use strict'
 
@@ -23013,7 +22808,7 @@ sha256.x2 = function(message, options) {
 
 }(this);
 
-},{"convert-hex":87,"convert-string":88}],87:[function(require,module,exports){
+},{"convert-hex":88,"convert-string":89}],88:[function(require,module,exports){
 !function(globals) {
 'use strict'
 
@@ -23061,7 +22856,7 @@ if (typeof module !== 'undefined' && module.exports) { //CommonJS
 }
 
 }(this);
-},{}],88:[function(require,module,exports){
+},{}],89:[function(require,module,exports){
 !function(globals) {
 'use strict'
 
@@ -23091,7 +22886,7 @@ if (typeof module !== 'undefined' && module.exports) { //CommonJS
 }
 
 }(this);
-},{}],89:[function(require,module,exports){
+},{}],90:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -23220,7 +23015,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":77,"inherits":91,"readable-stream/duplex.js":94,"readable-stream/passthrough.js":103,"readable-stream/readable.js":104,"readable-stream/transform.js":105,"readable-stream/writable.js":106}],90:[function(require,module,exports){
+},{"events":77,"inherits":92,"readable-stream/duplex.js":95,"readable-stream/passthrough.js":104,"readable-stream/readable.js":105,"readable-stream/transform.js":106,"readable-stream/writable.js":107}],91:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -23331,16 +23126,16 @@ function objectToString(o) {
 }
 
 }).call(this,{"isBuffer":require("../../../../is-buffer/index.js")})
-},{"../../../../is-buffer/index.js":82}],91:[function(require,module,exports){
+},{"../../../../is-buffer/index.js":82}],92:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"dup":27}],92:[function(require,module,exports){
+},{"dup":27}],93:[function(require,module,exports){
 var toString = {}.toString;
 
 module.exports = Array.isArray || function (arr) {
   return toString.call(arr) == '[object Array]';
 };
 
-},{}],93:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -23387,10 +23182,10 @@ function nextTick(fn, arg1, arg2, arg3) {
 }
 
 }).call(this,require('_process'))
-},{"_process":85}],94:[function(require,module,exports){
+},{"_process":86}],95:[function(require,module,exports){
 module.exports = require('./lib/_stream_duplex.js');
 
-},{"./lib/_stream_duplex.js":95}],95:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":96}],96:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -23515,7 +23310,7 @@ function forEach(xs, f) {
     f(xs[i], i);
   }
 }
-},{"./_stream_readable":97,"./_stream_writable":99,"core-util-is":90,"inherits":91,"process-nextick-args":93}],96:[function(require,module,exports){
+},{"./_stream_readable":98,"./_stream_writable":100,"core-util-is":91,"inherits":92,"process-nextick-args":94}],97:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -23563,7 +23358,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":98,"core-util-is":90,"inherits":91}],97:[function(require,module,exports){
+},{"./_stream_transform":99,"core-util-is":91,"inherits":92}],98:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -24573,7 +24368,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":95,"./internal/streams/BufferList":100,"./internal/streams/destroy":101,"./internal/streams/stream":102,"_process":85,"core-util-is":90,"events":77,"inherits":91,"isarray":92,"process-nextick-args":93,"safe-buffer":107,"string_decoder/":108,"util":61}],98:[function(require,module,exports){
+},{"./_stream_duplex":96,"./internal/streams/BufferList":101,"./internal/streams/destroy":102,"./internal/streams/stream":103,"_process":86,"core-util-is":91,"events":77,"inherits":92,"isarray":93,"process-nextick-args":94,"safe-buffer":108,"string_decoder/":109,"util":61}],99:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -24788,7 +24583,7 @@ function done(stream, er, data) {
 
   return stream.push(null);
 }
-},{"./_stream_duplex":95,"core-util-is":90,"inherits":91}],99:[function(require,module,exports){
+},{"./_stream_duplex":96,"core-util-is":91,"inherits":92}],100:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -25455,7 +25250,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":95,"./internal/streams/destroy":101,"./internal/streams/stream":102,"_process":85,"core-util-is":90,"inherits":91,"process-nextick-args":93,"safe-buffer":107,"util-deprecate":109}],100:[function(require,module,exports){
+},{"./_stream_duplex":96,"./internal/streams/destroy":102,"./internal/streams/stream":103,"_process":86,"core-util-is":91,"inherits":92,"process-nextick-args":94,"safe-buffer":108,"util-deprecate":110}],101:[function(require,module,exports){
 'use strict';
 
 /*<replacement>*/
@@ -25530,7 +25325,7 @@ module.exports = function () {
 
   return BufferList;
 }();
-},{"safe-buffer":107}],101:[function(require,module,exports){
+},{"safe-buffer":108}],102:[function(require,module,exports){
 'use strict';
 
 /*<replacement>*/
@@ -25603,13 +25398,13 @@ module.exports = {
   destroy: destroy,
   undestroy: undestroy
 };
-},{"process-nextick-args":93}],102:[function(require,module,exports){
+},{"process-nextick-args":94}],103:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":77}],103:[function(require,module,exports){
+},{"events":77}],104:[function(require,module,exports){
 module.exports = require('./readable').PassThrough
 
-},{"./readable":104}],104:[function(require,module,exports){
+},{"./readable":105}],105:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -25618,17 +25413,17 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":95,"./lib/_stream_passthrough.js":96,"./lib/_stream_readable.js":97,"./lib/_stream_transform.js":98,"./lib/_stream_writable.js":99}],105:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":96,"./lib/_stream_passthrough.js":97,"./lib/_stream_readable.js":98,"./lib/_stream_transform.js":99,"./lib/_stream_writable.js":100}],106:[function(require,module,exports){
 module.exports = require('./readable').Transform
 
-},{"./readable":104}],106:[function(require,module,exports){
+},{"./readable":105}],107:[function(require,module,exports){
 module.exports = require('./lib/_stream_writable.js');
 
-},{"./lib/_stream_writable.js":99}],107:[function(require,module,exports){
+},{"./lib/_stream_writable.js":100}],108:[function(require,module,exports){
 arguments[4][30][0].apply(exports,arguments)
-},{"buffer":66,"dup":30}],108:[function(require,module,exports){
+},{"buffer":66,"dup":30}],109:[function(require,module,exports){
 arguments[4][63][0].apply(exports,arguments)
-},{"dup":63,"safe-buffer":107}],109:[function(require,module,exports){
+},{"dup":63,"safe-buffer":108}],110:[function(require,module,exports){
 (function (global){
 
 /**
@@ -25699,7 +25494,7 @@ function config (name) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],110:[function(require,module,exports){
+},{}],111:[function(require,module,exports){
 /*! http://mths.be/startswith v0.2.0 by @mathias */
 if (!String.prototype.startsWith) {
 	(function() {
@@ -25756,16 +25551,16 @@ if (!String.prototype.startsWith) {
 	}());
 }
 
-},{}],111:[function(require,module,exports){
+},{}],112:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"dup":27}],112:[function(require,module,exports){
+},{"dup":27}],113:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],113:[function(require,module,exports){
+},{}],114:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -26355,7 +26150,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":112,"_process":85,"inherits":111}],114:[function(require,module,exports){
+},{"./support/isBuffer":113,"_process":86,"inherits":112}],115:[function(require,module,exports){
 /*
  * verror.js: richer JavaScript errors
  */
@@ -26808,7 +26603,470 @@ WError.prototype.cause = function we_cause(c)
 	return (this.jse_cause);
 };
 
-},{"assert-plus":9,"core-util-is":115,"extsprintf":78,"util":113}],115:[function(require,module,exports){
-arguments[4][90][0].apply(exports,arguments)
-},{"../../../../is-buffer/index.js":82,"dup":90}]},{},[5])(5)
+},{"assert-plus":9,"core-util-is":116,"extsprintf":78,"util":114}],116:[function(require,module,exports){
+arguments[4][91][0].apply(exports,arguments)
+},{"../../../../is-buffer/index.js":82,"dup":91}],117:[function(require,module,exports){
+(function(self) {
+  'use strict';
+
+  if (self.fetch) {
+    return
+  }
+
+  var support = {
+    searchParams: 'URLSearchParams' in self,
+    iterable: 'Symbol' in self && 'iterator' in Symbol,
+    blob: 'FileReader' in self && 'Blob' in self && (function() {
+      try {
+        new Blob()
+        return true
+      } catch(e) {
+        return false
+      }
+    })(),
+    formData: 'FormData' in self,
+    arrayBuffer: 'ArrayBuffer' in self
+  }
+
+  if (support.arrayBuffer) {
+    var viewClasses = [
+      '[object Int8Array]',
+      '[object Uint8Array]',
+      '[object Uint8ClampedArray]',
+      '[object Int16Array]',
+      '[object Uint16Array]',
+      '[object Int32Array]',
+      '[object Uint32Array]',
+      '[object Float32Array]',
+      '[object Float64Array]'
+    ]
+
+    var isDataView = function(obj) {
+      return obj && DataView.prototype.isPrototypeOf(obj)
+    }
+
+    var isArrayBufferView = ArrayBuffer.isView || function(obj) {
+      return obj && viewClasses.indexOf(Object.prototype.toString.call(obj)) > -1
+    }
+  }
+
+  function normalizeName(name) {
+    if (typeof name !== 'string') {
+      name = String(name)
+    }
+    if (/[^a-z0-9\-#$%&'*+.\^_`|~]/i.test(name)) {
+      throw new TypeError('Invalid character in header field name')
+    }
+    return name.toLowerCase()
+  }
+
+  function normalizeValue(value) {
+    if (typeof value !== 'string') {
+      value = String(value)
+    }
+    return value
+  }
+
+  // Build a destructive iterator for the value list
+  function iteratorFor(items) {
+    var iterator = {
+      next: function() {
+        var value = items.shift()
+        return {done: value === undefined, value: value}
+      }
+    }
+
+    if (support.iterable) {
+      iterator[Symbol.iterator] = function() {
+        return iterator
+      }
+    }
+
+    return iterator
+  }
+
+  function Headers(headers) {
+    this.map = {}
+
+    if (headers instanceof Headers) {
+      headers.forEach(function(value, name) {
+        this.append(name, value)
+      }, this)
+    } else if (Array.isArray(headers)) {
+      headers.forEach(function(header) {
+        this.append(header[0], header[1])
+      }, this)
+    } else if (headers) {
+      Object.getOwnPropertyNames(headers).forEach(function(name) {
+        this.append(name, headers[name])
+      }, this)
+    }
+  }
+
+  Headers.prototype.append = function(name, value) {
+    name = normalizeName(name)
+    value = normalizeValue(value)
+    var oldValue = this.map[name]
+    this.map[name] = oldValue ? oldValue+','+value : value
+  }
+
+  Headers.prototype['delete'] = function(name) {
+    delete this.map[normalizeName(name)]
+  }
+
+  Headers.prototype.get = function(name) {
+    name = normalizeName(name)
+    return this.has(name) ? this.map[name] : null
+  }
+
+  Headers.prototype.has = function(name) {
+    return this.map.hasOwnProperty(normalizeName(name))
+  }
+
+  Headers.prototype.set = function(name, value) {
+    this.map[normalizeName(name)] = normalizeValue(value)
+  }
+
+  Headers.prototype.forEach = function(callback, thisArg) {
+    for (var name in this.map) {
+      if (this.map.hasOwnProperty(name)) {
+        callback.call(thisArg, this.map[name], name, this)
+      }
+    }
+  }
+
+  Headers.prototype.keys = function() {
+    var items = []
+    this.forEach(function(value, name) { items.push(name) })
+    return iteratorFor(items)
+  }
+
+  Headers.prototype.values = function() {
+    var items = []
+    this.forEach(function(value) { items.push(value) })
+    return iteratorFor(items)
+  }
+
+  Headers.prototype.entries = function() {
+    var items = []
+    this.forEach(function(value, name) { items.push([name, value]) })
+    return iteratorFor(items)
+  }
+
+  if (support.iterable) {
+    Headers.prototype[Symbol.iterator] = Headers.prototype.entries
+  }
+
+  function consumed(body) {
+    if (body.bodyUsed) {
+      return Promise.reject(new TypeError('Already read'))
+    }
+    body.bodyUsed = true
+  }
+
+  function fileReaderReady(reader) {
+    return new Promise(function(resolve, reject) {
+      reader.onload = function() {
+        resolve(reader.result)
+      }
+      reader.onerror = function() {
+        reject(reader.error)
+      }
+    })
+  }
+
+  function readBlobAsArrayBuffer(blob) {
+    var reader = new FileReader()
+    var promise = fileReaderReady(reader)
+    reader.readAsArrayBuffer(blob)
+    return promise
+  }
+
+  function readBlobAsText(blob) {
+    var reader = new FileReader()
+    var promise = fileReaderReady(reader)
+    reader.readAsText(blob)
+    return promise
+  }
+
+  function readArrayBufferAsText(buf) {
+    var view = new Uint8Array(buf)
+    var chars = new Array(view.length)
+
+    for (var i = 0; i < view.length; i++) {
+      chars[i] = String.fromCharCode(view[i])
+    }
+    return chars.join('')
+  }
+
+  function bufferClone(buf) {
+    if (buf.slice) {
+      return buf.slice(0)
+    } else {
+      var view = new Uint8Array(buf.byteLength)
+      view.set(new Uint8Array(buf))
+      return view.buffer
+    }
+  }
+
+  function Body() {
+    this.bodyUsed = false
+
+    this._initBody = function(body) {
+      this._bodyInit = body
+      if (!body) {
+        this._bodyText = ''
+      } else if (typeof body === 'string') {
+        this._bodyText = body
+      } else if (support.blob && Blob.prototype.isPrototypeOf(body)) {
+        this._bodyBlob = body
+      } else if (support.formData && FormData.prototype.isPrototypeOf(body)) {
+        this._bodyFormData = body
+      } else if (support.searchParams && URLSearchParams.prototype.isPrototypeOf(body)) {
+        this._bodyText = body.toString()
+      } else if (support.arrayBuffer && support.blob && isDataView(body)) {
+        this._bodyArrayBuffer = bufferClone(body.buffer)
+        // IE 10-11 can't handle a DataView body.
+        this._bodyInit = new Blob([this._bodyArrayBuffer])
+      } else if (support.arrayBuffer && (ArrayBuffer.prototype.isPrototypeOf(body) || isArrayBufferView(body))) {
+        this._bodyArrayBuffer = bufferClone(body)
+      } else {
+        throw new Error('unsupported BodyInit type')
+      }
+
+      if (!this.headers.get('content-type')) {
+        if (typeof body === 'string') {
+          this.headers.set('content-type', 'text/plain;charset=UTF-8')
+        } else if (this._bodyBlob && this._bodyBlob.type) {
+          this.headers.set('content-type', this._bodyBlob.type)
+        } else if (support.searchParams && URLSearchParams.prototype.isPrototypeOf(body)) {
+          this.headers.set('content-type', 'application/x-www-form-urlencoded;charset=UTF-8')
+        }
+      }
+    }
+
+    if (support.blob) {
+      this.blob = function() {
+        var rejected = consumed(this)
+        if (rejected) {
+          return rejected
+        }
+
+        if (this._bodyBlob) {
+          return Promise.resolve(this._bodyBlob)
+        } else if (this._bodyArrayBuffer) {
+          return Promise.resolve(new Blob([this._bodyArrayBuffer]))
+        } else if (this._bodyFormData) {
+          throw new Error('could not read FormData body as blob')
+        } else {
+          return Promise.resolve(new Blob([this._bodyText]))
+        }
+      }
+
+      this.arrayBuffer = function() {
+        if (this._bodyArrayBuffer) {
+          return consumed(this) || Promise.resolve(this._bodyArrayBuffer)
+        } else {
+          return this.blob().then(readBlobAsArrayBuffer)
+        }
+      }
+    }
+
+    this.text = function() {
+      var rejected = consumed(this)
+      if (rejected) {
+        return rejected
+      }
+
+      if (this._bodyBlob) {
+        return readBlobAsText(this._bodyBlob)
+      } else if (this._bodyArrayBuffer) {
+        return Promise.resolve(readArrayBufferAsText(this._bodyArrayBuffer))
+      } else if (this._bodyFormData) {
+        throw new Error('could not read FormData body as text')
+      } else {
+        return Promise.resolve(this._bodyText)
+      }
+    }
+
+    if (support.formData) {
+      this.formData = function() {
+        return this.text().then(decode)
+      }
+    }
+
+    this.json = function() {
+      return this.text().then(JSON.parse)
+    }
+
+    return this
+  }
+
+  // HTTP methods whose capitalization should be normalized
+  var methods = ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'POST', 'PUT']
+
+  function normalizeMethod(method) {
+    var upcased = method.toUpperCase()
+    return (methods.indexOf(upcased) > -1) ? upcased : method
+  }
+
+  function Request(input, options) {
+    options = options || {}
+    var body = options.body
+
+    if (input instanceof Request) {
+      if (input.bodyUsed) {
+        throw new TypeError('Already read')
+      }
+      this.url = input.url
+      this.credentials = input.credentials
+      if (!options.headers) {
+        this.headers = new Headers(input.headers)
+      }
+      this.method = input.method
+      this.mode = input.mode
+      if (!body && input._bodyInit != null) {
+        body = input._bodyInit
+        input.bodyUsed = true
+      }
+    } else {
+      this.url = String(input)
+    }
+
+    this.credentials = options.credentials || this.credentials || 'omit'
+    if (options.headers || !this.headers) {
+      this.headers = new Headers(options.headers)
+    }
+    this.method = normalizeMethod(options.method || this.method || 'GET')
+    this.mode = options.mode || this.mode || null
+    this.referrer = null
+
+    if ((this.method === 'GET' || this.method === 'HEAD') && body) {
+      throw new TypeError('Body not allowed for GET or HEAD requests')
+    }
+    this._initBody(body)
+  }
+
+  Request.prototype.clone = function() {
+    return new Request(this, { body: this._bodyInit })
+  }
+
+  function decode(body) {
+    var form = new FormData()
+    body.trim().split('&').forEach(function(bytes) {
+      if (bytes) {
+        var split = bytes.split('=')
+        var name = split.shift().replace(/\+/g, ' ')
+        var value = split.join('=').replace(/\+/g, ' ')
+        form.append(decodeURIComponent(name), decodeURIComponent(value))
+      }
+    })
+    return form
+  }
+
+  function parseHeaders(rawHeaders) {
+    var headers = new Headers()
+    rawHeaders.split(/\r?\n/).forEach(function(line) {
+      var parts = line.split(':')
+      var key = parts.shift().trim()
+      if (key) {
+        var value = parts.join(':').trim()
+        headers.append(key, value)
+      }
+    })
+    return headers
+  }
+
+  Body.call(Request.prototype)
+
+  function Response(bodyInit, options) {
+    if (!options) {
+      options = {}
+    }
+
+    this.type = 'default'
+    this.status = 'status' in options ? options.status : 200
+    this.ok = this.status >= 200 && this.status < 300
+    this.statusText = 'statusText' in options ? options.statusText : 'OK'
+    this.headers = new Headers(options.headers)
+    this.url = options.url || ''
+    this._initBody(bodyInit)
+  }
+
+  Body.call(Response.prototype)
+
+  Response.prototype.clone = function() {
+    return new Response(this._bodyInit, {
+      status: this.status,
+      statusText: this.statusText,
+      headers: new Headers(this.headers),
+      url: this.url
+    })
+  }
+
+  Response.error = function() {
+    var response = new Response(null, {status: 0, statusText: ''})
+    response.type = 'error'
+    return response
+  }
+
+  var redirectStatuses = [301, 302, 303, 307, 308]
+
+  Response.redirect = function(url, status) {
+    if (redirectStatuses.indexOf(status) === -1) {
+      throw new RangeError('Invalid status code')
+    }
+
+    return new Response(null, {status: status, headers: {location: url}})
+  }
+
+  self.Headers = Headers
+  self.Request = Request
+  self.Response = Response
+
+  self.fetch = function(input, init) {
+    return new Promise(function(resolve, reject) {
+      var request = new Request(input, init)
+      var xhr = new XMLHttpRequest()
+
+      xhr.onload = function() {
+        var options = {
+          status: xhr.status,
+          statusText: xhr.statusText,
+          headers: parseHeaders(xhr.getAllResponseHeaders() || '')
+        }
+        options.url = 'responseURL' in xhr ? xhr.responseURL : options.headers.get('X-Request-URL')
+        var body = 'response' in xhr ? xhr.response : xhr.responseText
+        resolve(new Response(body, options))
+      }
+
+      xhr.onerror = function() {
+        reject(new TypeError('Network request failed'))
+      }
+
+      xhr.ontimeout = function() {
+        reject(new TypeError('Network request failed'))
+      }
+
+      xhr.open(request.method, request.url, true)
+
+      if (request.credentials === 'include') {
+        xhr.withCredentials = true
+      }
+
+      if ('responseType' in xhr && support.blob) {
+        xhr.responseType = 'blob'
+      }
+
+      request.headers.forEach(function(value, name) {
+        xhr.setRequestHeader(name, value)
+      })
+
+      xhr.send(typeof request._bodyInit === 'undefined' ? null : request._bodyInit)
+    })
+  }
+  self.fetch.polyfill = true
+})(typeof self !== 'undefined' ? self : this);
+
+},{}]},{},[5])(5)
 });
