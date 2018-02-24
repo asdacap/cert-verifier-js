@@ -2,7 +2,7 @@
 
 import debug from 'debug';
 import {VerifierError} from './config/default';
-import 'isomorphic-fetch'
+import fetch from 'cross-fetch';
 
 const log = debug("promisifiedRequests");
 
