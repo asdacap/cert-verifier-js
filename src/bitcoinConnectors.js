@@ -140,7 +140,7 @@ export function lookForTx(transactionId, chain, certificateVersion) {
   }
 
   return new Promise((resolve, reject) => {
-    return Promise.properRace(promises, MinimumBlockchainExplorers).then(winners => {
+    return properRace(promises, MinimumBlockchainExplorers).then(winners => {
       if (!winners || winners.length == 0) {
         return Promise.reject(new VerifierError("Could not confirm the transaction. No blockchain apis returned a response. This could be because of rate limiting."));
       }
@@ -173,7 +173,7 @@ export function lookForTx(transactionId, chain, certificateVersion) {
 
 }
 
-Promise.properRace = function (promises, count, results = []) {
+function properRace (promises, count, results = []) {
   // Source: https://www.jcore.com/2016/12/18/promise-me-you-wont-use-promise-race/
   promises = Array.from(promises);
   if (promises.length < count) {
@@ -191,9 +191,9 @@ Promise.properRace = function (promises, count, results = []) {
     if (count === 1) {
       return results;
     }
-    return Promise.properRace(promises, count - 1, results);
+    return properRace(promises, count - 1, results);
   }).catch(index => {
     promises.splice(index, 1);
-    return Promise.properRace(promises, count, results);
+    return properRace(promises, count, results);
   });
 };
